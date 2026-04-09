@@ -1,0 +1,13 @@
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[build]
+  publish = "dist/public"
+  command = "pnpm install && pnpm build"
+  base = "/"
+
+[build.environment]
+  PNPM_FLAGS = "--shamefully-hoist=false"
+  NODE_VERSION = "20"
