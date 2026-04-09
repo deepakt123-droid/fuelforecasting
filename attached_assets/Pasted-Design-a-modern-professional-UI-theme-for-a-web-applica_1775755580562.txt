@@ -1,0 +1,149 @@
+Design a modern, professional UI theme for a web application called **"Fuel Price Trend Forecasting System"**.
+
+The theme should be visually appealing, clean, and feel like a premium data analytics dashboard.
+
+---
+
+## 🎨 OVERALL DESIGN STYLE
+
+* Style: Minimal, modern, professional
+* Inspiration: Data analytics dashboards (like finance/AI tools)
+* Feel: Clean, intelligent, and futuristic
+* Avoid clutter, keep spacing and alignment perfect
+
+---
+
+## 🌈 COLOR SYSTEM
+
+Primary Theme: Mint-based (light + dark combination)
+
+* Background (main): Light mint gradient (very soft, easy on eyes)
+* Secondary background: White / very light grey
+* Primary color: Teal / Mint green
+* Accent color: Soft orange (for highlights and important elements)
+* Graph colors:
+
+  * Mint (primary lines)
+  * Orange (comparison lines)
+  * Light grey (grid)
+
+Dark Mode (for graph and calculation sections):
+
+* Background: Dark charcoal / near black
+* Lines: Neon mint + orange
+* Text: White / light grey
+
+---
+
+## 🧩 LAYOUT STRUCTURE
+
+* Use a sidebar navigation (left side)
+* Top navbar with title and controls
+* Main content area for dashboards
+* Cards for each section (rounded corners, soft shadows)
+
+Spacing:
+
+* Use consistent padding and margins
+* Keep UI breathable (not crowded)
+
+---
+
+## 📊 DASHBOARD THEMES (DIFFERENT FOR EACH SECTION)
+
+1. HOME PAGE:
+
+* Light mint gradient background
+* Hero section with large title
+* Subtle animated graph in background
+* Clean and welcoming
+
+2. GRAPH DASHBOARD:
+
+* Dark analytical theme
+* Neon mint and orange graph lines
+* Focus on data visualization
+* Smooth animations for graph rendering
+
+3. TABLE DASHBOARD:
+
+* Clean white/light background
+* Minimal design
+* Clear borders and row spacing
+* Sticky headers for better usability
+
+4. CALCULATION DASHBOARD:
+
+* Research/lab style theme
+* Dark background with grid pattern
+* Subtle glowing elements
+* Display equations, matrices, and values in a technical style
+
+5. CITY / FUEL DASHBOARD:
+
+* Balanced light theme
+* Card-based layout
+* Highlight key metrics (current price, growth)
+
+---
+
+## ✨ UI COMPONENTS
+
+* Buttons:
+
+  * Rounded corners
+  * Mint background with hover effect
+  * Smooth transitions
+
+* Cards:
+
+  * Soft shadow
+  * Rounded edges (border-radius ~12px)
+  * Hover lift effect
+
+* Dropdowns:
+
+  * Clean, minimal
+  * Smooth open/close animation
+
+* Graphs:
+
+  * Smooth line animations
+  * Tooltip on hover
+  * Zoom and pan support
+
+---
+
+## 🎞️ ANIMATIONS
+
+* Smooth page transitions (fade/slide)
+* Graph lines animate on load
+* Hover effects on cards and buttons
+* Loading skeletons while data loads
+
+---
+
+## 📱 RESPONSIVENESS
+
+* Fully responsive (mobile + tablet + desktop)
+* Sidebar collapses on small screens
+* Graphs resize dynamically
+
+---
+
+## 🌟 ADVANCED VISUAL TOUCHES
+
+* Subtle background patterns (grid or dots)
+* Floating light particles (very minimal)
+* Gradient highlights on important cards
+* Soft glow effects for active elements
+
+---
+
+## 🎯 GOAL
+
+The UI should look like a premium analytics platform used in finance or AI systems, with a strong focus on clarity, data visualization, and a modern mint-based aesthetic.
+
+---
+
+## END OF THEME PROMPT
