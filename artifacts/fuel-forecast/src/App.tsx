@@ -9,6 +9,9 @@ import DataTable from "@/pages/DataTable";
 import Forecast from "@/pages/Forecast";
 import FuelCalculator from "@/pages/Calculator";
 import CityFuel from "@/pages/CityFuel";
+import MathFramework from "@/pages/MathFramework";
+import MarketEvents from "@/pages/MarketEvents";
+import References from "@/pages/References";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -23,6 +26,9 @@ function Router() {
         <Route path="/forecast" component={Forecast} />
         <Route path="/calculator" component={FuelCalculator} />
         <Route path="/city" component={CityFuel} />
+        <Route path="/math" component={MathFramework} />
+        <Route path="/events" component={MarketEvents} />
+        <Route path="/references" component={References} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

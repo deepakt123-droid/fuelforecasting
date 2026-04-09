@@ -1,25 +1,28 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Home, BarChart2, Table, TrendingUp, Calculator, MapPin, Menu, X, Fuel, Moon, Sun } from "lucide-react";
+import {
+  Home, BarChart2, Table, TrendingUp, Calculator, MapPin,
+  Menu, X, Fuel, Moon, Sun, FlaskConical, BookOpen, Newspaper, ChevronRight
+} from "lucide-react";
 
 const NAV_ITEMS = [
-  { href: "/", icon: Home, label: "Home" },
-  { href: "/graphs", icon: BarChart2, label: "Price Charts" },
-  { href: "/table", icon: Table, label: "Data Tables" },
-  { href: "/forecast", icon: TrendingUp, label: "10-Year Forecast" },
-  { href: "/calculator", icon: Calculator, label: "Calculator" },
-  { href: "/city", icon: MapPin, label: "City Dashboard" },
+  { href: "/", icon: Home, label: "Home", section: "main" },
+  { href: "/graphs", icon: BarChart2, label: "Price Charts", section: "main" },
+  { href: "/table", icon: Table, label: "Data Tables", section: "main" },
+  { href: "/forecast", icon: TrendingUp, label: "10-Year Projection", section: "main" },
+  { href: "/calculator", icon: Calculator, label: "Expense Calculator", section: "main" },
+  { href: "/city", icon: MapPin, label: "City Dashboard", section: "main" },
+  { href: "/math", icon: FlaskConical, label: "Math Framework", section: "analysis" },
+  { href: "/events", icon: Newspaper, label: "Market Events", section: "analysis" },
+  { href: "/references", icon: BookOpen, label: "References", section: "analysis" },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [dark, setDark] = useState(() => {
-    if (typeof window !== "undefined") {
-      return document.documentElement.classList.contains("dark");
-    }
-    return false;
-  });
+  const [dark, setDark] = useState(() =>
+    typeof window !== "undefined" && document.documentElement.classList.contains("dark")
+  );
 
   const toggleDark = () => {
     setDark(d => {
@@ -30,37 +33,64 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   };
 
   const NavContent = () => (
-    <nav className="flex flex-col h-full">
+    <nav className="flex flex-col h-full overflow-hidden">
       {/* Logo */}
-      <div className="px-4 py-5 border-b border-sidebar-border">
+      <div className="px-4 py-5 border-b border-sidebar-border flex-shrink-0">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center">
-            <Fuel size={16} className="text-primary-foreground" />
+          <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center flex-shrink-0">
+            <Fuel size={15} className="text-white" />
           </div>
           <div>
-            <div className="font-bold text-sidebar-foreground text-sm leading-tight" style={{ fontFamily: "Space Grotesk, sans-serif" }}>Fuel Forecast</div>
-            <div className="text-xs text-muted-foreground">India Analytics</div>
+            <div className="font-bold text-sidebar-foreground text-sm leading-tight">Fuel Forecast</div>
+            <div className="text-xs text-muted-foreground">India — Analytics</div>
           </div>
         </div>
       </div>
 
-      {/* Nav items */}
-      <div className="flex-1 py-4 px-2 space-y-0.5 overflow-y-auto">
-        {NAV_ITEMS.map(item => {
-          const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));
+      <div className="flex-1 py-3 px-2 overflow-y-auto space-y-0.5">
+        {/* Main */}
+        <div className="px-2 pb-1 pt-0.5">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Analytics</span>
+        </div>
+        {NAV_ITEMS.filter(i => i.section === "main").map(item => {
+          const isActive = location === item.href;
           return (
             <Link key={item.href} href={item.href}>
               <div
                 onClick={() => setSidebarOpen(false)}
-                data-testid={`nav-${item.label.toLowerCase().replace(/ /g, "-")}`}
-                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+                className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                   isActive
-                    ? "bg-primary text-primary-foreground shadow-sm"
+                    ? "bg-primary text-white shadow-sm"
                     : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 }`}
               >
-                <item.icon size={16} />
-                {item.label}
+                <item.icon size={15} className="flex-shrink-0" />
+                <span className="flex-1 truncate">{item.label}</span>
+                {isActive && <ChevronRight size={12} className="opacity-60" />}
+              </div>
+            </Link>
+          );
+        })}
+
+        {/* Analysis */}
+        <div className="px-2 pb-1 pt-3">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Research</span>
+        </div>
+        {NAV_ITEMS.filter(i => i.section === "analysis").map(item => {
+          const isActive = location === item.href;
+          return (
+            <Link key={item.href} href={item.href}>
+              <div
+                onClick={() => setSidebarOpen(false)}
+                className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+                  isActive
+                    ? "bg-primary text-white shadow-sm"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                }`}
+              >
+                <item.icon size={15} className="flex-shrink-0" />
+                <span className="flex-1 truncate">{item.label}</span>
+                {isActive && <ChevronRight size={12} className="opacity-60" />}
               </div>
             </Link>
           );
@@ -68,20 +98,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Bottom */}
-      <div className="px-2 py-4 border-t border-sidebar-border">
+      <div className="px-2 py-3 border-t border-sidebar-border flex-shrink-0 space-y-1">
         <button
           onClick={toggleDark}
-          data-testid="btn-dark-mode"
-          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent transition-all"
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent transition-all"
         >
-          {dark ? <Sun size={16} /> : <Moon size={16} />}
+          {dark ? <Sun size={14} /> : <Moon size={14} />}
           {dark ? "Light Mode" : "Dark Mode"}
         </button>
-        <div className="mt-3 px-3 py-2 rounded-xl bg-sidebar-accent/50 text-xs text-muted-foreground">
-          <div className="font-semibold text-sidebar-foreground mb-0.5">Data Coverage</div>
+        <div className="px-3 py-2 rounded-xl bg-sidebar-accent/60 text-xs text-muted-foreground leading-relaxed">
+          <div className="font-semibold text-sidebar-foreground mb-0.5 text-[11px]">Data Coverage</div>
           Petrol & Diesel: 2014–2026<br />
-          LPG: 2013–2026<br />
-          Forecast: 2026–2036
+          LPG: 2013–2026 · Forecast: 2026–2036
         </div>
       </div>
     </nav>
@@ -90,20 +118,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex flex-col w-56 xl:w-64 bg-sidebar border-r border-sidebar-border flex-shrink-0">
+      <aside className="hidden lg:flex flex-col w-56 xl:w-60 bg-sidebar border-r border-sidebar-border flex-shrink-0">
         <NavContent />
       </aside>
 
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-50 flex">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
-          <aside className="relative w-64 bg-sidebar border-r border-sidebar-border flex-shrink-0 z-10">
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
-              data-testid="btn-close-sidebar"
-            >
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
+          <aside className="relative w-60 bg-sidebar border-r border-sidebar-border flex-shrink-0 z-10">
+            <button onClick={() => setSidebarOpen(false)} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground p-1">
               <X size={18} />
             </button>
             <NavContent />
@@ -111,21 +135,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      {/* Main Content */}
+      {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top bar (mobile) */}
-        <header className="lg:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-background/95 backdrop-blur-sm">
+        {/* Mobile top bar */}
+        <header className="lg:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-background/95 backdrop-blur-sm flex-shrink-0">
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              data-testid="btn-open-sidebar"
-              className="p-2 rounded-xl hover:bg-muted transition-all"
-            >
+            <button onClick={() => setSidebarOpen(true)} className="p-2 rounded-xl hover:bg-muted transition-all">
               <Menu size={18} />
             </button>
             <div className="flex items-center gap-1.5">
-              <Fuel size={16} className="text-primary" />
-              <span className="font-bold text-foreground text-sm" style={{ fontFamily: "Space Grotesk, sans-serif" }}>Fuel Forecast</span>
+              <Fuel size={15} className="text-primary" />
+              <span className="font-bold text-foreground text-sm">Fuel Forecast</span>
             </div>
           </div>
           <button onClick={toggleDark} className="p-2 rounded-xl hover:bg-muted transition-all">
@@ -133,9 +153,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </button>
         </header>
 
-        {/* Page Content */}
         <main className="flex-1 overflow-y-auto">
-          <div className="max-w-6xl mx-auto p-4 md:p-6 pb-8">
+          <div className="max-w-6xl mx-auto p-4 md:p-6 pb-10">
             {children}
           </div>
         </main>

@@ -1,218 +1,284 @@
 import { useState } from "react";
 import { MapPin, TrendingUp, TrendingDown, Minus } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import {
+  BarChart, Bar, LineChart, Line, RadarChart, Radar, PolarGrid,
+  PolarAngleAxis, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from "recharts";
 import { FUEL_TYPES, CITIES, getHistoryForFuel, getCurrentPrice, getYearlyAverage, type FuelType, type City } from "@/data/fuelData";
 
 const CITY_COLORS: Record<City, string> = {
-  delhi: "#2dd4bf",
-  mumbai: "#fb923c",
-  chennai: "#38bdf8",
-  kolkata: "#a78bfa",
+  delhi: "#2dd4bf", mumbai: "#fb923c", chennai: "#38bdf8", kolkata: "#a78bfa",
+};
+const CITY_GRADIENTS: Record<City, string> = {
+  delhi: "from-teal-400/25 to-teal-600/10",
+  mumbai: "from-orange-400/25 to-orange-600/10",
+  chennai: "from-sky-400/25 to-sky-600/10",
+  kolkata: "from-violet-400/25 to-violet-600/10",
 };
 
-const CITY_BG: Record<City, string> = {
-  delhi: "from-teal-400/20 to-teal-600/10",
-  mumbai: "from-orange-400/20 to-orange-600/10",
-  chennai: "from-sky-400/20 to-sky-600/10",
-  kolkata: "from-violet-400/20 to-violet-600/10",
-};
-
-function TrendBadge({ v1, v2 }: { v1: number; v2: number }) {
+function Trend({ v1, v2 }: { v1: number; v2: number }) {
   const pct = ((v2 - v1) / v1) * 100;
-  if (Math.abs(pct) < 0.5) return <span className="flex items-center gap-0.5 text-muted-foreground text-xs"><Minus size={10} /> Stable</span>;
-  if (pct > 0) return <span className="flex items-center gap-0.5 text-red-500 text-xs font-semibold"><TrendingUp size={10} /> +{pct.toFixed(1)}%</span>;
+  if (Math.abs(pct) < 0.5)
+    return <span className="flex items-center gap-0.5 text-muted-foreground text-xs"><Minus size={10} /> Stable</span>;
+  if (pct > 0)
+    return <span className="flex items-center gap-0.5 text-red-500 text-xs font-semibold"><TrendingUp size={10} /> +{pct.toFixed(1)}%</span>;
   return <span className="flex items-center gap-0.5 text-emerald-500 text-xs font-semibold"><TrendingDown size={10} /> {pct.toFixed(1)}%</span>;
 }
 
 export default function CityFuel() {
   const [selectedCity, setSelectedCity] = useState<City>("delhi");
   const [selectedFuel, setSelectedFuel] = useState<FuelType>("petrol");
+  const [view, setView] = useState<"city" | "comparison" | "radar">("city");
 
-  const cityInfo = CITIES.find(c => c.key === selectedCity)!;
-  const history = getHistoryForFuel(selectedFuel);
+  const currentCity = CITIES.find(c => c.key === selectedCity)!;
   const fuelInfo = FUEL_TYPES.find(f => f.key === selectedFuel)!;
-  const currentPrice = getCurrentPrice(selectedFuel)[selectedCity];
 
-  // YoY comparison
-  const recentYears = [2020, 2021, 2022, 2023, 2024, 2025, 2026];
-  const yearlyData = recentYears.map(year => ({
-    year: String(year),
-    ...CITIES.reduce((acc, c) => ({
-      ...acc,
-      [c.key]: getYearlyAverage(history, year)[c.key] || 0
-    }), {} as Record<City, number>)
-  })).filter(d => d[selectedCity] > 0);
+  // Current prices per fuel for selected city
+  const petrolPrice = getCurrentPrice("petrol")[selectedCity];
+  const dieselPrice = getCurrentPrice("diesel")[selectedCity];
+  const lpgPrice = getCurrentPrice("lpg")[selectedCity];
 
-  // All cities at a glance for current fuel
-  const allCityCurrentPrices = getCurrentPrice(selectedFuel);
-  const maxCity = CITIES.reduce((a, b) => allCityCurrentPrices[a.key] > allCityCurrentPrices[b.key] ? a : b);
-  const minCity = CITIES.reduce((a, b) => allCityCurrentPrices[a.key] < allCityCurrentPrices[b.key] ? a : b);
-
-  // Price change stats
-  const prev2025Avg = getYearlyAverage(history, 2025)[selectedCity];
-  const prev2024Avg = getYearlyAverage(history, 2024)[selectedCity];
-  const prev2020Avg = getYearlyAverage(history, 2020)[selectedCity];
-
-  // Monthly recent trend
-  const recent12 = history.slice(-12).map(h => ({
-    label: `${h.month.substring(0, 3)} '${String(h.year).slice(-2)}`,
+  // Historical for selected fuel+city
+  const history = getHistoryForFuel(selectedFuel);
+  const cityHistory = history.slice(-24).map(h => ({
+    label: `${h.month} ${h.year}`,
     price: h[selectedCity],
   }));
 
+  // Yearly trend for city
+  const availableYears = [...new Set(history.map(h => h.year))].sort();
+  const yearlyForCity = availableYears.map(year => ({
+    year: String(year),
+    price: getYearlyAverage(history, year)[selectedCity],
+  }));
+
+  // Metro comparison (current prices, all fuels)
+  const comparisonData = FUEL_TYPES.map(f => {
+    const prices = getCurrentPrice(f.key);
+    return {
+      fuel: f.label,
+      ...CITIES.reduce((acc, c) => ({ ...acc, [c.key]: prices[c.key] }), {} as Record<City, number>)
+    };
+  });
+
+  // Radar: multi-fuel snapshot per city (normalised 0-100 relative to max)
+  const radarData = FUEL_TYPES.map(f => {
+    const prices = getCurrentPrice(f.key);
+    const values = CITIES.map(c => prices[c.key]);
+    const maxV = Math.max(...values);
+    return {
+      fuel: f.label,
+      ...CITIES.reduce((acc, c) => ({ ...acc, [c.key]: Math.round((prices[c.key] / maxV) * 100) }), {} as Record<City, number>)
+    };
+  });
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 page-city">
       {/* Header */}
       <div>
         <div className="flex items-center gap-2 mb-1">
           <MapPin size={20} className="text-primary" />
-          <h1 className="text-2xl font-bold text-foreground" style={{ fontFamily: "Space Grotesk, sans-serif" }}>City & Fuel Dashboard</h1>
+          <h1 className="text-2xl font-bold text-foreground">City Dashboard</h1>
         </div>
-        <p className="text-muted-foreground text-sm">Detailed metrics per city and fuel type</p>
+        <p className="text-muted-foreground text-sm">Per-city fuel profile, multi-city comparison, and normalised radar view</p>
       </div>
 
-      {/* City selector cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {CITIES.map(c => {
-          const price = allCityCurrentPrices[c.key];
-          const isSelected = selectedCity === c.key;
-          return (
-            <button
-              key={c.key}
-              onClick={() => setSelectedCity(c.key)}
-              data-testid={`city-select-${c.key}`}
-              className={`text-left rounded-2xl p-4 transition-all border-2 card-lift ${
-                isSelected ? "border-primary shadow-md" : "border-transparent bg-card hover:border-border"
-              }`}
-              style={isSelected ? { borderColor: CITY_COLORS[c.key] } : {}}
-            >
-              <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${CITY_BG[c.key]} flex items-center justify-center mb-2`}>
-                <MapPin size={14} style={{ color: CITY_COLORS[c.key] }} />
-              </div>
-              <div className="font-bold text-foreground">{c.label}</div>
-              <div className="text-lg font-bold mt-0.5" style={{ color: CITY_COLORS[c.key] }}>₹{price.toFixed(2)}</div>
-              <div className="text-xs text-muted-foreground">{fuelInfo.unit}</div>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Fuel selector */}
-      <div className="flex gap-2 flex-wrap">
-        {FUEL_TYPES.map(f => (
-          <button
-            key={f.key}
-            onClick={() => setSelectedFuel(f.key)}
-            data-testid={`city-fuel-${f.key}`}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-              selectedFuel === f.key ? "bg-primary text-primary-foreground" : "bg-card border border-border text-muted-foreground hover:bg-muted"
-            }`}
-          >
-            {f.icon} {f.label}
+      {/* View Tabs */}
+      <div className="flex gap-2">
+        {[
+          { k: "city", label: "City Profile" },
+          { k: "comparison", label: "City Comparison" },
+          { k: "radar", label: "Radar View" },
+        ].map(t => (
+          <button key={t.k} onClick={() => setView(t.k as typeof view)}
+            className={`px-4 py-1.5 rounded-xl text-sm font-semibold transition-all border ${
+              view === t.k ? "bg-primary text-white border-primary shadow-sm" : "bg-card text-muted-foreground border-border hover:border-primary/40"
+            }`}>
+            {t.label}
           </button>
         ))}
       </div>
 
-      {/* City Detail */}
-      <div className={`rounded-2xl p-6 bg-gradient-to-br ${CITY_BG[selectedCity]} border border-border`}>
-        <div className="flex items-start justify-between flex-wrap gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <MapPin size={16} style={{ color: CITY_COLORS[selectedCity] }} />
-              <h2 className="font-bold text-foreground text-xl">{cityInfo.label}</h2>
-            </div>
-            <div className="text-4xl font-bold text-foreground mb-1" style={{ fontFamily: "Space Grotesk, sans-serif" }} data-testid="city-current-price">
-              ₹{currentPrice.toFixed(2)}
-            </div>
-            <div className="text-sm text-muted-foreground">{fuelInfo.label} · {fuelInfo.unit} · April 2026</div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: "vs 2025 avg", v1: prev2025Avg, v2: currentPrice },
-              { label: "vs 2024 avg", v1: prev2024Avg, v2: currentPrice },
-              { label: "vs 2020 avg", v1: prev2020Avg, v2: currentPrice },
-            ].map(stat => (
-              <div key={stat.label} className="bg-card/70 rounded-xl px-3 py-2 text-center">
-                <div className="text-xs text-muted-foreground mb-0.5">{stat.label}</div>
-                <TrendBadge v1={stat.v1} v2={stat.v2} />
-              </div>
+      {/* City + Fuel selectors */}
+      <div className="bg-card border border-border rounded-2xl p-5 flex flex-wrap gap-5">
+        <div>
+          <div className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2">Select City</div>
+          <div className="flex gap-2 flex-wrap">
+            {CITIES.map(c => (
+              <button key={c.key} onClick={() => setSelectedCity(c.key)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all border ${
+                  selectedCity === c.key ? "text-white border-transparent shadow-sm" : "bg-muted text-muted-foreground border-border hover:border-primary/50"
+                }`}
+                style={selectedCity === c.key ? { background: CITY_COLORS[c.key], borderColor: CITY_COLORS[c.key] } : {}}>
+                {c.label}
+              </button>
             ))}
-            <div className="bg-card/70 rounded-xl px-3 py-2 text-center">
-              <div className="text-xs text-muted-foreground mb-0.5">Rank in metros</div>
-              <div className="text-sm font-bold text-foreground">
-                {CITIES.sort((a, b) => allCityCurrentPrices[a.key] - allCityCurrentPrices[b.key]).findIndex(c => c.key === selectedCity) + 1} / 4
-              </div>
-            </div>
+          </div>
+        </div>
+        <div>
+          <div className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2">Fuel Type</div>
+          <div className="flex gap-2 flex-wrap">
+            {FUEL_TYPES.map(f => (
+              <button key={f.key} onClick={() => setSelectedFuel(f.key)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${selectedFuel === f.key ? "bg-primary text-white" : "bg-muted text-muted-foreground hover:bg-muted/70"}`}>
+                {f.icon} {f.label}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent 12-month trend */}
-        <div className="bg-card border border-border rounded-2xl p-5">
-          <h3 className="font-semibold text-foreground mb-4 text-sm">12-Month Price Trend — {cityInfo.label}</h3>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={recent12} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(168 25% 85% / 0.4)" strokeWidth={0.8} />
-              <XAxis dataKey="label" tick={{ fontSize: 10, fill: "hsl(200 15% 50%)" }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: "hsl(200 15% 50%)" }} tickLine={false} axisLine={false} tickFormatter={v => `₹${v}`} width={50} />
-              <Tooltip
-                formatter={(v: number) => [`₹${v.toFixed(2)}`, cityInfo.label]}
-                contentStyle={{ borderRadius: "12px", border: "1px solid hsl(var(--border))", background: "hsl(var(--card))" }}
-              />
-              <Bar dataKey="price" fill={CITY_COLORS[selectedCity]} radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Year-over-year comparison */}
-        <div className="bg-card border border-border rounded-2xl p-5">
-          <h3 className="font-semibold text-foreground mb-4 text-sm">Year-over-Year — All Cities ({fuelInfo.label})</h3>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={yearlyData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(168 25% 85% / 0.4)" strokeWidth={0.8} />
-              <XAxis dataKey="year" tick={{ fontSize: 10, fill: "hsl(200 15% 50%)" }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: "hsl(200 15% 50%)" }} tickLine={false} axisLine={false} tickFormatter={v => `₹${v}`} width={50} />
-              <Tooltip contentStyle={{ borderRadius: "12px", border: "1px solid hsl(var(--border))", background: "hsl(var(--card))", fontSize: "12px" }} />
-              <Legend wrapperStyle={{ fontSize: "11px" }} />
-              {CITIES.map(c => (
-                <Bar key={c.key} dataKey={c.key} name={c.label} fill={CITY_COLORS[c.key]} radius={[3, 3, 0, 0]} />
+      {/* CITY PROFILE */}
+      {view === "city" && (
+        <div className="space-y-5">
+          {/* City hero card */}
+          <div className={`rounded-2xl p-6 bg-gradient-to-br ${CITY_GRADIENTS[selectedCity]} border border-border`}>
+            <div className="flex items-center gap-2 mb-4">
+              <MapPin size={16} style={{ color: CITY_COLORS[selectedCity] }} />
+              <h2 className="font-bold text-foreground text-lg">{currentCity.label} — Fuel Snapshot</h2>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              {[
+                { fuel: "Petrol", price: petrolPrice, unit: "/L", icon: "⛽" },
+                { fuel: "Diesel", price: dieselPrice, unit: "/L", icon: "🚛" },
+                { fuel: "LPG", price: lpgPrice, unit: "/Cyl", icon: "🔥" },
+              ].map(f => (
+                <div key={f.fuel} className="bg-card/70 border border-border rounded-xl p-4 text-center backdrop-blur-sm">
+                  <div className="text-xl mb-1">{f.icon}</div>
+                  <div className="text-xl font-bold text-foreground">₹{f.price.toFixed(0)}</div>
+                  <div className="text-xs text-muted-foreground">{f.fuel} {f.unit}</div>
+                </div>
               ))}
-            </BarChart>
+            </div>
+          </div>
+
+          {/* 24-month price history chart */}
+          <div className="bg-card border border-border rounded-2xl p-5">
+            <h3 className="font-bold text-foreground mb-1 text-sm">24-Month {fuelInfo.label} Price History — {currentCity.label}</h3>
+            <p className="text-xs text-muted-foreground mb-4">Unit: {fuelInfo.unit}</p>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={cityHistory}>
+                <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.4} />
+                <XAxis dataKey="label" tick={{ fontSize: 10, fill: "hsl(200 15% 50%)" }} tickLine={false} axisLine={false} interval={3} />
+                <YAxis tick={{ fontSize: 11, fill: "hsl(200 15% 50%)" }} tickLine={false} axisLine={false} tickFormatter={v => `₹${v}`} width={62} />
+                <Tooltip formatter={(v: number) => [`₹${v.toFixed(2)}`, fuelInfo.label]} />
+                <Line type="monotone" dataKey="price" stroke={CITY_COLORS[selectedCity]} strokeWidth={2.5} dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: "white" }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Yearly average trend */}
+          <div className="bg-card border border-border rounded-2xl p-5">
+            <h3 className="font-bold text-foreground mb-1 text-sm">Annual Average {fuelInfo.label} Price — {currentCity.label}</h3>
+            <p className="text-xs text-muted-foreground mb-4">{fuelInfo.unit}</p>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={yearlyForCity}>
+                <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.4} />
+                <XAxis dataKey="year" tick={{ fontSize: 10, fill: "hsl(200 15% 50%)" }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: "hsl(200 15% 50%)" }} tickLine={false} axisLine={false} tickFormatter={v => `₹${v}`} width={62} />
+                <Tooltip formatter={(v: number) => [`₹${v.toFixed(2)}`, fuelInfo.label]} />
+                <Bar dataKey="price" fill={CITY_COLORS[selectedCity]} radius={[4,4,0,0]} maxBarSize={28} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Year-over-year change table */}
+          <div className="bg-card border border-border rounded-2xl overflow-hidden">
+            <div className="px-5 py-3 border-b border-border bg-muted/30 text-sm font-bold text-foreground">
+              Year-over-Year Price Change — {currentCity.label} {fuelInfo.label}
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left px-4 py-2.5 font-bold text-muted-foreground text-xs uppercase">Year</th>
+                    <th className="text-right px-4 py-2.5 font-bold text-muted-foreground text-xs uppercase">Avg Price</th>
+                    <th className="text-right px-4 py-2.5 font-bold text-muted-foreground text-xs uppercase">YoY Change</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {yearlyForCity.slice(1).map((row, i) => {
+                    const prev = yearlyForCity[i];
+                    const pct = ((row.price - prev.price) / prev.price) * 100;
+                    return (
+                      <tr key={row.year} className={`border-b border-border/50 hover:bg-muted/30 transition-colors ${i % 2 ? "bg-muted/10" : ""}`}>
+                        <td className="px-4 py-2.5 font-bold text-foreground">{row.year}</td>
+                        <td className="text-right px-4 py-2.5 text-foreground font-mono">₹{row.price.toFixed(2)}</td>
+                        <td className="text-right px-4 py-2.5">
+                          <Trend v1={prev.price} v2={row.price} />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CITY COMPARISON */}
+      {view === "comparison" && (
+        <div className="space-y-5">
+          <div className="bg-card border border-border rounded-2xl p-5">
+            <h2 className="font-bold text-foreground mb-1">Metro City Price Comparison</h2>
+            <p className="text-xs text-muted-foreground mb-4">Current April 2026 prices across all fuel types · Unit varies</p>
+            <ResponsiveContainer width="100%" height={320}>
+              <BarChart data={comparisonData} margin={{ top: 5, right: 20, left: 5, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.4} />
+                <XAxis dataKey="fuel" tick={{ fontSize: 12, fill: "hsl(200 15% 50%)" }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: "hsl(200 15% 50%)" }} tickLine={false} axisLine={false} tickFormatter={v => `₹${v}`} width={68} />
+                <Tooltip formatter={(v: number, name: string) => [`₹${v.toFixed(2)}`, CITIES.find(c => c.key === name)?.label || name]} />
+                <Legend formatter={name => CITIES.find(c => c.key === name)?.label || name} wrapperStyle={{ fontSize: "12px", paddingTop: "12px" }} />
+                {CITIES.map(c => (
+                  <Bar key={c.key} dataKey={c.key} fill={CITY_COLORS[c.key]} radius={[4,4,0,0]} maxBarSize={28} />
+                ))}
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* City summary cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {CITIES.map(city => {
+              const petrol = getCurrentPrice("petrol")[city.key];
+              const diesel = getCurrentPrice("diesel")[city.key];
+              const lpg = getCurrentPrice("lpg")[city.key];
+              return (
+                <div key={city.key} className={`rounded-2xl p-4 bg-gradient-to-br ${CITY_GRADIENTS[city.key]} border border-border card-lift`}>
+                  <div className="flex items-center gap-1.5 mb-3">
+                    <MapPin size={12} style={{ color: CITY_COLORS[city.key] }} />
+                    <span className="text-xs font-bold uppercase tracking-wide" style={{ color: CITY_COLORS[city.key] }}>{city.label}</span>
+                  </div>
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex justify-between"><span className="text-muted-foreground">Petrol</span><span className="font-bold text-foreground">₹{petrol.toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Diesel</span><span className="font-bold text-foreground">₹{diesel.toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span className="text-mrol-foreground text-muted-foreground">LPG</span><span className="font-bold text-foreground">₹{lpg.toFixed(0)}</span></div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* RADAR VIEW */}
+      {view === "radar" && (
+        <div className="bg-card border border-border rounded-2xl p-5">
+          <h2 className="font-bold text-foreground mb-1">Normalised Multi-Fuel Radar</h2>
+          <p className="text-xs text-muted-foreground mb-4">City fuel prices normalised 0–100 relative to highest metro price per fuel type. 100 = most expensive city.</p>
+          <ResponsiveContainer width="100%" height={420}>
+            <RadarChart data={radarData}>
+              <PolarGrid stroke="hsl(var(--border))" />
+              <PolarAngleAxis dataKey="fuel" tick={{ fontSize: 12, fill: "hsl(200 15% 50%)" }} />
+              {CITIES.map(c => (
+                <Radar key={c.key} name={c.label} dataKey={c.key} stroke={CITY_COLORS[c.key]} fill={CITY_COLORS[c.key]} fillOpacity={0.12} strokeWidth={2} />
+              ))}
+              <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} />
+              <Tooltip formatter={(v: number, name: string) => [`${v}/100`, name]} />
+            </RadarChart>
           </ResponsiveContainer>
         </div>
-      </div>
-
-      {/* All cities comparison */}
-      <div className="bg-card border border-border rounded-2xl p-5">
-        <h3 className="font-semibold text-foreground mb-4 text-sm">Metro Cities Price Comparison — {fuelInfo.label} (April 2026)</h3>
-        <div className="space-y-3">
-          {CITIES.sort((a, b) => allCityCurrentPrices[a.key] - allCityCurrentPrices[b.key]).map(c => {
-            const price = allCityCurrentPrices[c.key];
-            const pct = (price / maxCity.key ? allCityCurrentPrices[maxCity.key] : price) * 100;
-            const barWidth = (price / allCityCurrentPrices[maxCity.key]) * 100;
-            return (
-              <div key={c.key} data-testid={`compare-bar-${c.key}`}>
-                <div className="flex items-center justify-between mb-1 text-sm">
-                  <div className="flex items-center gap-2">
-                    <MapPin size={12} style={{ color: CITY_COLORS[c.key] }} />
-                    <span className="font-medium text-foreground">{c.label}</span>
-                    {c.key === minCity.key && <span className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 px-1.5 py-0.5 rounded-full font-semibold">Cheapest</span>}
-                    {c.key === maxCity.key && <span className="text-xs bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-400 px-1.5 py-0.5 rounded-full font-semibold">Highest</span>}
-                  </div>
-                  <span className="font-bold text-foreground">₹{price.toFixed(2)}</span>
-                </div>
-                <div className="h-2.5 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-700"
-                    style={{ width: `${barWidth}%`, background: CITY_COLORS[c.key] }}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      )}
     </div>
   );
 }
