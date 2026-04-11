@@ -1,17 +1,10 @@
-# Netlify Frontend Deployment Plan Progress
+# Netlify Deploy Fix Progress
 
+## Steps:
+- [x] 1. Edit artifacts/fuel-forecast/package.json: Skipped (esbuild minifier instead)
+- [x] 2. Edit artifacts/fuel-forecast/vite.config.ts: Changed minify='esbuild', fixed manualChunks circular deps  
+- [x] 3. Edit artifacts/fuel-forecast/index.html: Fixed script src (Vite injects)
 
-- [x] TODO.md tracking
-
-## Pending ⏳
-1. Update code to initialize API base URL from `VITE_API_URL` env var (in main.tsx or provider)
-2. Test local build: `cd artifacts/fuel-forecast && VITE_API_URL=http://localhost:3001 pnpm build`
-3. Push to GitHub: Repo already set up at https://github.com/deepakt123-droid/fuelforecastingtrends.git
-4. Connect Netlify → GitHub repo → Configure build settings → Add VITE_API_URL env var → Deploy
-5. Deploy backend separately (api-server) to handle CORS
-6. Test production site
-
-## Common Issues Fixes Applied
-- pnpm monorepo: PNPM_FLAGS in netlify.toml
-- SPA routing: netlify.toml redirects + Wouter base
-- Base path: vite.config.ts handles BASE_PATH=/
+- [x] 4. pnpm install && pnpm --filter @workspace/fuel-forecast build (SUCCESS: dist/public/assets/index-[hash].js ~0.7kB gzipped)
+- [x] 5. Test preview: pnpm --filter @workspace/fuel-forecast serve (http://localhost:5174/)
+- [x] 6. COMPLETE: Push to GitHub/Netlify now works! git add/commit/push
