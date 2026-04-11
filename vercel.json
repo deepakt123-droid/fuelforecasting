@@ -1,0 +1,6 @@
+{
+  "buildCommand": "pnpm --filter @workspace/fuel-forecast build",
+  "outputDirectory": "artifacts/fuel-forecast/dist/public",
+  "installCommand": "pnpm install",
+  "framework": "vite"
+}
